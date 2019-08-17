@@ -1,5 +1,5 @@
 //=====================================================================
-// Copyright (C) 2014 Instrumental Software Technologies, Inc.
+// Copyright (C) 2019 Instrumental Software Technologies, Inc.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -57,6 +57,9 @@ package com.isti.util.mac;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import com.apple.eawt.AppEvent.QuitEvent;
+import com.apple.eawt.QuitResponse;
+
 /**
  * Mac utility functions.
  * 
@@ -111,11 +114,28 @@ public class MacUtilFns {
 	 * @param actionListener
 	 *            the action listener.
 	 * @param command
-	 *            the action command.
+	 *            the action command or null if none.
 	 * @see #isMac()
 	 */
 	public static void setAboutHandler(final ActionListener actionListener,
 			final String command) {
+		setHandler(actionListener, command, null);
+	}
+
+	/**
+	 * Set the handler for the Mac about and quit menu options. This should only
+	 * be called if Mac.
+	 * 
+	 * @param actionListener
+	 *            the action listener.
+	 * @param aboutCommand
+	 *            the about action command or null if none.
+	 * @param quitCommand
+	 *            the quit action command or null if none.
+	 * @see #isMac()
+	 */
+	public static void setHandler(final ActionListener actionListener,
+			final String aboutCommand, final String quitCommand) {
 		// exit if not using the screen menu bar
 		if (!Boolean.getBoolean(USESCREENMENUBAR_KEY)) {
 			return;
@@ -123,13 +143,28 @@ public class MacUtilFns {
 		try {
 			com.apple.eawt.Application application = com.apple.eawt.Application
 					.getApplication();
-			application.setAboutHandler(new com.apple.eawt.AboutHandler() {
-				@Override
-				public void handleAbout(com.apple.eawt.AppEvent.AboutEvent e) {
-					actionListener.actionPerformed(new ActionEvent(e
-							.getSource(), ActionEvent.ACTION_PERFORMED, command));
-				}
-			});
+			if (aboutCommand != null) {
+				application.setAboutHandler(new com.apple.eawt.AboutHandler() {
+					@Override
+					public void handleAbout(
+							com.apple.eawt.AppEvent.AboutEvent e) {
+						actionListener.actionPerformed(new ActionEvent(
+								e.getSource(), ActionEvent.ACTION_PERFORMED,
+								aboutCommand));
+					}
+				});
+			}
+			if (quitCommand != null) {
+				application.setQuitHandler(new com.apple.eawt.QuitHandler() {
+					@Override
+					public void handleQuitRequestWith(QuitEvent e,
+							QuitResponse qr) {
+						actionListener.actionPerformed(new ActionEvent(
+								e.getSource(), ActionEvent.ACTION_PERFORMED,
+								quitCommand));
+					}
+				});
+			}
 		} catch (Throwable t) {
 		}
 	}
